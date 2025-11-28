@@ -46,6 +46,10 @@ class GameObject:
         self.position = (SCREEN_WIDTH // 2), (SCREEN_HEIGHT // 2)
         self.body_color = None
 
+    def draw(self):
+        """Метод отрисовки"""
+        pass
+
 
 class Apple(GameObject):
     """Дочерний класс, Базового "Игрового объекта" - Яблоко."""
@@ -70,7 +74,7 @@ class Apple(GameObject):
         rect = pygame.Rect(self.position, (GRID_SIZE, GRID_SIZE))
         pygame.draw.rect(screen, self.body_color, rect)
         pygame.draw.rect(screen, BORDER_COLOR, rect, 1)
-    
+
     def reset(self):
         """Метод рестарта игры, сброс позиции."""
         self.position = self.randomize_position()
@@ -123,13 +127,13 @@ class Snake(GameObject):
             rect = pygame.Rect(position, (GRID_SIZE, GRID_SIZE))
             pygame.draw.rect(screen, self.body_color, rect)
             pygame.draw.rect(screen, BORDER_COLOR, rect, 1)
-    
+
     def reset(self):
         """Метод сброса игры до стартовых значений."""
         self.lenght = 1
         self.direction = LEFT
         self.next_direction = None
-        self.positions = [self.position]   
+        self.positions = [self.position]
 
 
 def handle_keys(game_object):
@@ -140,7 +144,7 @@ def handle_keys(game_object):
             raise SystemExit
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP and game_object.direction != DOWN:
-                game_object.next_direction = UP 
+                game_object.next_direction = UP
             elif event.key == pygame.K_DOWN and game_object.direction != UP:
                 game_object.next_direction = DOWN
             elif event.key == pygame.K_LEFT and game_object.direction != RIGHT:
