@@ -1,5 +1,5 @@
-from random import choice
 import pygame as pg
+from random import choice
 
 # Константы для размеров поля и сетки:
 SCREEN_WIDTH, SCREEN_HEIGHT = 640, 540
@@ -178,17 +178,17 @@ class Backend:
     """
 
     def __init__(self):
-        self.file_name = "result.txt"
+        self.file_name = 'result.txt'
 
     def save_score(self, score: int) -> None:
         """СОбработка файла, записываем очки."""
-        with open(self.file_name, "a", encoding="utf-8") as file:
-            file.write(f"{score}\n")
+        with open(self.file_name, 'a', encoding='utf-8') as file:
+            file.write(f'{score}\n')
 
     def get_best_score(self) -> int:
         """Обработка файла, возвращаем рекорд."""
         best_score = 0
-        with open(self.file_name, "r", encoding="utf-8") as file:
+        with open(self.file_name, 'r', encoding='utf-8') as file:
             for line in file:
                 score = int(line.strip())
                 if score > best_score:
