@@ -190,9 +190,7 @@ class Backend:
         best_score = 0
         with open(self.file_name, "r", encoding="utf-8") as file:
             for line in file:
-                line = line.strip()
-                if not line:
-                    score = int(line)
+                score = int(line.strip())
                 if score > best_score:
                     best_score = score
         return best_score
