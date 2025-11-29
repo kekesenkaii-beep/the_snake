@@ -94,7 +94,7 @@ class Snake(GameObject):
 
     def __init__(self):
         super().__init__()
-        self.lenght = 23
+        self.lenght = 1
         self.direction = LEFT
         self.next_direction = None
         self.current_speed = SPEED
