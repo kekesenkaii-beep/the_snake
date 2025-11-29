@@ -1,6 +1,6 @@
+
 import pygame as pg
 from random import choice
-
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 640, 540
 GRID_UI = 60
