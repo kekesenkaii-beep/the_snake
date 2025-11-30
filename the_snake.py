@@ -6,9 +6,7 @@ SCREEN_WIDTH, SCREEN_HEIGHT = 640, 480
 GRID_SIZE = 20
 GRID_WIDTH = SCREEN_WIDTH // GRID_SIZE
 GRID_HEIGHT = SCREEN_HEIGHT // GRID_SIZE
-CENTER_X = SCREEN_WIDTH // 2
-CENTER_Y = SCREEN_HEIGHT // 2
-CENTER = (CENTER_X, CENTER_Y)
+CENTER = ((SCREEN_WIDTH // 2), (SCREEN_HEIGHT // 2))
 ALL_CELLS = {
     (x * GRID_SIZE, y * GRID_SIZE)
     for x in range(GRID_WIDTH)
@@ -35,6 +33,8 @@ FAST_SPEED = 30
 
 BOARD_BACKGROUND_COLOR = (128, 128, 128)
 
+BORDER_COLOR = (93, 216, 228)
+
 APPLE_COLOR = (255, 0, 0)
 
 SNAKE_COLOR = (0, 255, 0)
@@ -49,36 +49,35 @@ clock = pg.time.Clock()
 class GameObject:
     """Базовый класс каждого игрового объекта(змейка, яблоко)."""
 
-    def __init__(self) -> None:
-        self.body_color = None
+    def __init__(self, color=None) -> None:
+        self.body_color = color
         self.position = CENTER
 
-    def draw_cell(self, position, body_color):
-        """Рисует одну ячейку нужным цветом."""
+    def draw_cell(self, position, color, with_border=True):
+        """Базовая зарисовка ячейки, с флагом наличия "Рамки"."""
         rect = pg.Rect(position, (GRID_SIZE, GRID_SIZE))
-        pg.draw.rect(screen, body_color, rect)
+        pg.draw.rect(screen, color, rect)
+        if with_border:
+            pg.draw.rect(screen, BORDER_COLOR, rect, 1)
 
     def draw(self):
         """Базовый метод отрисовки объекта (переопределяется в потомках)."""
         # Добавил для прохождения тестов
-        self.draw_cell(self.position, self.body_color)
+        pass
 
 
 class Apple(GameObject):
     """Дочерний класс, Базового "Игрового объекта" - Яблоко."""
 
-    def __init__(self, forbidden_cells=None, color=APPLE_COLOR):
-        super().__init__()
+    # Поменял значение по умолчанию forbidden_cells,
+    # на создание пустого кортежа. Pytest не проходит.
+    def __init__(self, forbidden_cells=()):
+        super().__init__(color=APPLE_COLOR)
         self.randomize_position(forbidden_cells)
-        self.body_color = color
 
-    def randomize_position(self, forbidden_cells=None):
+    def randomize_position(self, forbidden_cells=()):
         """Метод, отвечает за рандомную позицию каждого "нового" яблока."""
-        if forbidden_cells is None:
-            forbidden_cells = []
-
-        forbidden_set = set(forbidden_cells)
-        free_cells = ALL_CELLS - forbidden_set
+        free_cells = ALL_CELLS - set(forbidden_cells)
         self.position = choice(tuple(free_cells))
 
     def draw(self):
@@ -92,11 +91,20 @@ class Snake(GameObject):
     Дополненый аргументами: Длинна, Направление, Следующее направление.
     """
 
-    def __init__(self, color=SNAKE_COLOR):
-        super().__init__()
-        self.body_color = color
-        self.reset()
+    def __init__(self):
+        super().__init__(color=SNAKE_COLOR)
         self.current_speed = SPEED
+        self.reset()
+
+    def draw(self):
+        """Отрисовка змейки"""
+        self.draw_cell(self.position, self.body_color)
+        if self.last is not None:
+            self.draw_cell(
+                self.last,
+                BOARD_BACKGROUND_COLOR,
+                with_border=False
+            )
 
     def update_direction(self, next_direction):
         """Метод обновления направления."""
@@ -115,23 +123,20 @@ class Snake(GameObject):
         self.positions.insert(0, self.position)
 
         if len(self.positions) > self.lenght:
-            tail = self.positions.pop()
-            self.draw_cell(tail, BOARD_BACKGROUND_COLOR)
+            self.last = self.positions.pop()
+        else:
+            self.last = None
 
     def reset(self):
         """Метод сброса игры до стартовых значений."""
         self.lenght = 1
         self.direction = LEFT
         self.positions = [CENTER]
+        self.last = None
 
     def get_head_position(self) -> tuple:
         """Обработка запроса, а где голова?"""
         return self.positions[0]
-
-    def draw(self):
-        """Отрисовка змейки"""
-        for position in self.positions:
-            self.draw_cell(position, self.body_color)
 
 
 class Backend:
@@ -162,9 +167,10 @@ class Backend:
 def handle_keys(snake):
     """Метод обработки нажатий клавиатуры пользователя."""
     for event in pg.event.get():
-        is_quit = event.type == pg.QUIT
-        is_escape = event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE
-        if is_quit or is_escape:
+        if (
+            event.type == pg.QUIT
+            or (event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE)
+        ):
             pg.quit()
             raise SystemExit
 
@@ -178,8 +184,8 @@ def handle_keys(snake):
             elif event.key == pg.K_RIGHT:
                 snake.update_direction(RIGHT)
 
-    pressed_keys = pg.key.get_pressed()
-    snake.current_speed = FAST_SPEED if pressed_keys[pg.K_SPACE] else SPEED
+    pressed = pg.key.get_pressed()
+    return pressed[pg.K_SPACE]
 
 
 # Главная функция, тут логика игры.
@@ -187,32 +193,35 @@ def main():
     """Главная функция игры, запуск игрового цикла, логика."""
     # Инициализация pg:
     pg.init()
-    pg.font.init()
     # Тут нужно создать экземпляры классов.
     screen.fill(BOARD_BACKGROUND_COLOR)
     snake = Snake()
     apple = Apple(snake.positions)
     backend = Backend()
     score = 1
+    speed = SPEED
 
     # Основной цикл игры.
     while True:
-        handle_keys(snake)
-        clock.tick(snake.current_speed)
+        fast = handle_keys(snake)
+        speed = FAST_SPEED if fast else SPEED
+        clock.tick(speed)
         snake.move()
+        apple.draw()
+        snake.draw()
 
         if apple.position == snake.position:
             snake.lenght += 1
             score += 1
             apple.randomize_position(snake.positions)
+
         elif snake.get_head_position() in snake.positions[3:]:
             backend.save_score(score)
             snake.reset()
+            score = 1
             apple.randomize_position(snake.positions)
             screen.fill(BOARD_BACKGROUND_COLOR)
 
-        apple.draw()
-        snake.draw()
         record_score = backend.get_best_score()
         pg.display.set_caption(
             '"Змейка". "ESC" - выход "SPACE" - ускорение.'
