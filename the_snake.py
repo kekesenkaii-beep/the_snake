@@ -6,8 +6,6 @@ SCREEN_WIDTH, SCREEN_HEIGHT = 640, 480
 GRID_SIZE = 20
 GRID_WIDTH = SCREEN_WIDTH // GRID_SIZE
 GRID_HEIGHT = SCREEN_HEIGHT // GRID_SIZE
-# Было: CENTER = ((SCREEN_WIDTH // 2), (SCREEN_HEIGHT // 2))
-# Две пары скобок лишние:
 CENTER = SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2
 
 ALL_CELLS = {
@@ -33,8 +31,6 @@ DIRECTIONS_MAP = {
     (DOWN, pg.K_LEFT): LEFT,
     (DOWN, pg.K_RIGHT): RIGHT,
 }
-
-# Словарь с обратными направлениями:
 
 # Константы скорости:
 SPEED = 20
@@ -72,7 +68,6 @@ class GameObject:
 
     def draw(self):
         """Базовый метод отрисовки объекта (переопределяется в потомках)."""
-        # Докстрока уже создаёт непустое тело, pass не нужен
         ...
 
 
@@ -154,13 +149,13 @@ class Backend:
 
     def save_score(self, score: int) -> None:
         """Обработка файла, записываем очки."""
-        with open(self.file_name, "a", encoding="utf-8") as file:
+        with open(self.file_name, 'a', encoding='utf-8') as file:
             file.write(f"{score}\n")
 
     def get_best_score(self) -> int:
         """Обработка файла, возвращаем рекорд."""
         best_score = 0
-        with open(self.file_name, "r", encoding="utf-8") as file:
+        with open(self.file_name, 'r', encoding='utf-8') as file:
             for line in file:
                 score = int(line.strip())
                 if score > best_score:
@@ -185,7 +180,6 @@ def handle_keys(snake):
     return pressed[pg.K_SPACE]
 
 
-# Главная функция, тут логика игры.
 def main():
     """Главная функция игры, запуск игрового цикла, логика."""
     pg.init()
@@ -219,7 +213,7 @@ def main():
         record_score = backend.get_best_score()
         pg.display.set_caption(
             '"Змейка". "ESC" - выход "SPACE" - ускорение.'
-            f"Очки: {score} Рекорд: {record_score}."
+            f'Очки: {score} Рекорд: {record_score}.'
         )
         pg.display.update()
 
