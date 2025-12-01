@@ -6,7 +6,10 @@ SCREEN_WIDTH, SCREEN_HEIGHT = 640, 480
 GRID_SIZE = 20
 GRID_WIDTH = SCREEN_WIDTH // GRID_SIZE
 GRID_HEIGHT = SCREEN_HEIGHT // GRID_SIZE
-CENTER = ((SCREEN_WIDTH // 2), (SCREEN_HEIGHT // 2))
+# Было: CENTER = ((SCREEN_WIDTH // 2), (SCREEN_HEIGHT // 2))
+# Две пары скобок лишние:
+CENTER = SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2
+
 ALL_CELLS = {
     (x * GRID_SIZE, y * GRID_SIZE)
     for x in range(GRID_WIDTH)
@@ -19,13 +22,19 @@ DOWN = (0, 1)
 LEFT = (-1, 0)
 RIGHT = (1, 0)
 
-# Словарь с обратными направлениями:
-OPPOSITE_DIRECTIONS = {
-    UP: DOWN,
-    DOWN: UP,
-    LEFT: RIGHT,
-    RIGHT: LEFT
+# Слоаврь-константа со след.направлениями движения:
+DIRECTIONS_MAP = {
+    (LEFT, pg.K_UP): UP,
+    (LEFT, pg.K_DOWN): DOWN,
+    (RIGHT, pg.K_UP): UP,
+    (RIGHT, pg.K_DOWN): DOWN,
+    (UP, pg.K_LEFT): LEFT,
+    (UP, pg.K_RIGHT): RIGHT,
+    (DOWN, pg.K_LEFT): LEFT,
+    (DOWN, pg.K_RIGHT): RIGHT,
 }
+
+# Словарь с обратными направлениями:
 
 # Константы скорости:
 SPEED = 20
@@ -47,91 +56,86 @@ clock = pg.time.Clock()
 
 
 class GameObject:
-    """Базовый класс каждого игрового объекта(змейка, яблоко)."""
+    """Базовый класс каждого игрового объекта (змейка, яблоко)."""
 
     def __init__(self, color=None) -> None:
         self.body_color = color
         self.position = CENTER
 
-    def draw_cell(self, position, color, with_border=True):
-        """Базовая зарисовка ячейки, с флагом наличия "Рамки"."""
+    def draw_cell(self, position, color=None):
+        """Базовая зарисовка ячейки."""
+        if color is None:
+            color = self.body_color
         rect = pg.Rect(position, (GRID_SIZE, GRID_SIZE))
         pg.draw.rect(screen, color, rect)
-        if with_border:
-            pg.draw.rect(screen, BORDER_COLOR, rect, 1)
+        pg.draw.rect(screen, BORDER_COLOR, rect, 1)
 
     def draw(self):
         """Базовый метод отрисовки объекта (переопределяется в потомках)."""
-        # Добавил для прохождения тестов
-        pass
+        # Докстрока уже создаёт непустое тело, pass не нужен
+        ...
 
 
 class Apple(GameObject):
-    """Дочерний класс, Базового "Игрового объекта" - Яблоко."""
+    """Дочерний класс, базового игрового объекта — Яблоко."""
 
-    # Поменял значение по умолчанию forbidden_cells,
-    # на создание пустого кортежа. Pytest не проходит.
-    def __init__(self, forbidden_cells=()):
-        super().__init__(color=APPLE_COLOR)
+    def __init__(self, forbidden_cells=(), color=APPLE_COLOR):
+        super().__init__(color)
         self.randomize_position(forbidden_cells)
 
-    def randomize_position(self, forbidden_cells=()):
+    def randomize_position(self, forbidden_cells):
         """Метод, отвечает за рандомную позицию каждого "нового" яблока."""
-        free_cells = ALL_CELLS - set(forbidden_cells)
-        self.position = choice(tuple(free_cells))
+        self.position = choice(tuple(ALL_CELLS - set(forbidden_cells)))
 
     def draw(self):
-        """Отрисовка Яблока"""
-        self.draw_cell(self.position, self.body_color)
+        """Отрисовка яблока."""
+        self.draw_cell(self.position)
 
 
 class Snake(GameObject):
     """
-    Дочерний класс, Базового "Игрового объекта" - Змейка,
-    Дополненый аргументами: Длинна, Направление, Следующее направление.
+    Дочерний класс, базового игрового объекта — Змейка,
+    дополненный аргументами: длина, направление.
     """
 
-    def __init__(self):
-        super().__init__(color=SNAKE_COLOR)
-        self.current_speed = SPEED
+    def __init__(self, color=SNAKE_COLOR):
+        super().__init__(color)
         self.reset()
 
     def draw(self):
-        """Отрисовка змейки"""
-        self.draw_cell(self.position, self.body_color)
+        """Отрисовка змейки."""
+        self.draw_cell(self.position)
         if self.last is not None:
-            self.draw_cell(
-                self.last,
-                BOARD_BACKGROUND_COLOR,
-                with_border=False
-            )
+            rect = pg.Rect(self.last, (GRID_SIZE, GRID_SIZE))
+            pg.draw.rect(screen, BOARD_BACKGROUND_COLOR, rect)
 
-    def update_direction(self, next_direction):
-        """Метод обновления направления."""
-        if OPPOSITE_DIRECTIONS[self.direction] != next_direction:
-            self.direction = next_direction
+    def update_direction(self, key):
+        """Метод обнолвения направления"""
+        self.direction = (
+            DIRECTIONS_MAP.get((self.direction, key), self.direction)
+        )
 
     def move(self):
-        """Метод расчета новой головы по заданному направлении."""
+        """Метод расчета новой головы по заданному направлению."""
         head_x, head_y = self.get_head_position()
         dx, dy = self.direction
 
         self.position = (
             (head_x + dx * GRID_SIZE) % SCREEN_WIDTH,
-            (head_y + dy * GRID_SIZE) % SCREEN_HEIGHT
+            (head_y + dy * GRID_SIZE) % SCREEN_HEIGHT,
         )
         self.positions.insert(0, self.position)
 
-        if len(self.positions) > self.lenght:
-            self.last = self.positions.pop()
-        else:
-            self.last = None
+        self.last = (
+            self.positions.pop() if len(self.positions) > self.lenght else None
+        )
 
     def reset(self):
         """Метод сброса игры до стартовых значений."""
         self.lenght = 1
         self.direction = LEFT
         self.positions = [CENTER]
+        self.position = CENTER
         self.last = None
 
     def get_head_position(self) -> tuple:
@@ -141,22 +145,22 @@ class Snake(GameObject):
 
 class Backend:
     """
-    Отдельный класс Бэкэнда.
+    Отдельный класс бэкэнда.
     Обработка файлов, возврат рекордного кол-ва очков.
     """
 
     def __init__(self):
-        self.file_name = 'result.txt'
+        self.file_name = "result.txt"
 
     def save_score(self, score: int) -> None:
-        """СОбработка файла, записываем очки."""
-        with open(self.file_name, 'a', encoding='utf-8') as file:
-            file.write(f'{score}\n')
+        """Обработка файла, записываем очки."""
+        with open(self.file_name, "a", encoding="utf-8") as file:
+            file.write(f"{score}\n")
 
     def get_best_score(self) -> int:
         """Обработка файла, возвращаем рекорд."""
         best_score = 0
-        with open(self.file_name, 'r', encoding='utf-8') as file:
+        with open(self.file_name, "r", encoding="utf-8") as file:
             for line in file:
                 score = int(line.strip())
                 if score > best_score:
@@ -165,7 +169,7 @@ class Backend:
 
 
 def handle_keys(snake):
-    """Метод обработки нажатий клавиатуры пользователя."""
+    """Метод обновления направления"""
     for event in pg.event.get():
         if (
             event.type == pg.QUIT
@@ -175,14 +179,7 @@ def handle_keys(snake):
             raise SystemExit
 
         if event.type == pg.KEYDOWN:
-            if event.key == pg.K_UP:
-                snake.update_direction(UP)
-            elif event.key == pg.K_DOWN:
-                snake.update_direction(DOWN)
-            elif event.key == pg.K_LEFT:
-                snake.update_direction(LEFT)
-            elif event.key == pg.K_RIGHT:
-                snake.update_direction(RIGHT)
+            snake.update_direction(event.key)
 
     pressed = pg.key.get_pressed()
     return pressed[pg.K_SPACE]
@@ -191,9 +188,7 @@ def handle_keys(snake):
 # Главная функция, тут логика игры.
 def main():
     """Главная функция игры, запуск игрового цикла, логика."""
-    # Инициализация pg:
     pg.init()
-    # Тут нужно создать экземпляры классов.
     screen.fill(BOARD_BACKGROUND_COLOR)
     snake = Snake()
     apple = Apple(snake.positions)
@@ -201,34 +196,33 @@ def main():
     score = 1
     speed = SPEED
 
-    # Основной цикл игры.
     while True:
         fast = handle_keys(snake)
         speed = FAST_SPEED if fast else SPEED
         clock.tick(speed)
         snake.move()
-        apple.draw()
-        snake.draw()
 
         if apple.position == snake.position:
             snake.lenght += 1
             score += 1
             apple.randomize_position(snake.positions)
-
-        elif snake.get_head_position() in snake.positions[3:]:
+        elif snake.get_head_position() in snake.positions[2:]:
             backend.save_score(score)
             snake.reset()
             score = 1
             apple.randomize_position(snake.positions)
             screen.fill(BOARD_BACKGROUND_COLOR)
 
+        apple.draw()
+        snake.draw()
+
         record_score = backend.get_best_score()
         pg.display.set_caption(
             '"Змейка". "ESC" - выход "SPACE" - ускорение.'
-            f'Очки: {score} Рекорд: {record_score}.'
+            f"Очки: {score} Рекорд: {record_score}."
         )
         pg.display.update()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
