@@ -145,12 +145,12 @@ class Backend:
     """
 
     def __init__(self):
-        self.file_name = "result.txt"
+        self.file_name = 'result.txt'
 
     def save_score(self, score: int) -> None:
         """Обработка файла, записываем очки."""
         with open(self.file_name, 'a', encoding='utf-8') as file:
-            file.write(f"{score}\n")
+            file.write(f'{score}\n')
 
     def get_best_score(self) -> int:
         """Обработка файла, возвращаем рекорд."""
@@ -218,5 +218,5 @@ def main():
         pg.display.update()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
